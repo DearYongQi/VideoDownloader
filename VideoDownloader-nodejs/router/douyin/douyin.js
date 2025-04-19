@@ -97,8 +97,10 @@ router.post('/douyin', async (req, res) => {
         // 启动浏览器
         const puppeteerConfig = {};
         
-        // 检测运行环境，针对不同系统设置不同配置
-        const isRaspberryPi = process.platform === 'linux' && process.arch === 'arm' || process.arch === 'arm64';
+        // 改进环境检测逻辑，更精确地识别树莓派
+        const isRaspberryPi = process.platform === 'linux' && 
+                             (process.arch === 'arm' || process.arch === 'arm64') && 
+                             require('fs').existsSync('/usr/bin/chromium-browser');
         
         if (isRaspberryPi) {
             // 树莓派环境配置
@@ -111,8 +113,12 @@ router.post('/douyin', async (req, res) => {
                 '--disable-accelerated-2d-canvas',
                 '--disable-gpu',
                 '--disable-features=site-per-process',
-                '--disable-extensions'
+                '--disable-extensions',
+                '--window-size=1920,1080',
+                '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15"'
             ];
+            // 在树莓派上强制使用无头模式
+            puppeteerConfig.headless = true;
         } else {
             // Mac 或其他环境使用默认配置
             console.log('使用默认浏览器配置');
@@ -132,12 +138,50 @@ router.post('/douyin', async (req, res) => {
                 latency: 1
             });
 
-            await page.emulate({
-                viewport: { width: 3840, height: 2160 }
-            })
+            // 增强Mac模拟能力
+            await page.evaluateOnNewDocument(() => {
+                // 覆盖navigator对象，模拟Mac系统
+                Object.defineProperty(navigator, 'platform', { get: () => 'MacIntel' });
+                Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15' });
+                
+                // 模拟Mac的其他特性
+                Object.defineProperty(navigator, 'appVersion', { get: () => '5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15' });
+                Object.defineProperty(screen, 'colorDepth', { get: () => 24 });
+                Object.defineProperty(window, 'devicePixelRatio', { get: () => 2 });
+                
+                // 防止检测webdriver
+                delete navigator.__proto__.webdriver;
+            });
 
-            // 使用mac mini 提高清晰度
-            await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15');
+            await page.emulate({
+                viewport: { 
+                    width: 1920, 
+                    height: 1080,
+                    deviceScaleFactor: 2,
+                    isMobile: false,
+                    hasTouch: false,
+                    isLandscape: true
+                }
+            });
+
+            // 使用Mac用户代理
+            await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15');
+
+            // 收集找到的视频URL
+            const videoUrls = new Set();
+
+            // 监控XHR/Fetch响应，查找视频URL
+            page.on('response', async response => {
+                try {
+                    const url = response.url();
+                    if (url.includes('.mp4') || url.includes('.m3u8')) {
+                        videoUrls.add(url);
+                        console.log(`从网络请求中发现视频URL: ${url.substring(0, 100)}...`);
+                    }
+                } catch (error) {
+                    // 忽略错误
+                }
+            });
 
             // 导航到抖音链接
             console.log(`正在打开抖音链接: ${douyinUrl}`);
@@ -151,6 +195,15 @@ router.post('/douyin', async (req, res) => {
                 console.warn('未找到视频元素，继续尝试获取链接');
             }
 
+            // 尝试自动滚动页面，触发更多资源加载
+            await page.evaluate(() => {
+                window.scrollBy(0, 300);
+                window.scrollBy(0, -200);
+            });
+            
+            // 等待资源加载
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
             // 提取视频标题
             let title = await page.evaluate(() => {
                 const titleEl = document.querySelector('title') ||
@@ -162,11 +215,26 @@ router.post('/douyin', async (req, res) => {
             title = cleanTitle(title);
             console.log(`清理后标题: ${title}`);
 
-            // 获取所有视频源
-            const sources = await page.$$eval('video source', sources => {
-                return sources.map(source => source.src).filter(src => src);
+            // 从页面提取视频链接
+            const pageVideoUrls = await page.evaluate(() => {
+                const urls = [];
+                document.querySelectorAll('video').forEach(video => {
+                    if (video.src) urls.push(video.src);
+                });
+                document.querySelectorAll('source').forEach(source => {
+                    if (source.src) urls.push(source.src);
+                });
+                return Array.from(new Set(urls));
             });
             
+            pageVideoUrls.forEach(url => videoUrls.add(url));
+            
+            // 关闭浏览器
+            await browser.close();
+            browser = null;
+            
+            // 转换Set为数组
+            const sources = Array.from(videoUrls);
             console.log(`找到 ${sources.length} 个视频源链接`);
 
             // 测试所有视频源
@@ -178,12 +246,40 @@ router.post('/douyin', async (req, res) => {
                 console.log(`视频源 ${i + 1} 测试结果:`, result.isValid ? '可用' : '不可用', result.reason || '');
             }
 
-            // 关闭浏览器
-            await browser.close();
-            browser = null;
-
             // 找出可下载的视频源
-            const downloadableSource = sourceResults.find(source => source.isValid);
+            let downloadableSource = null;
+            
+            // 智能排序视频源 - 优先选择真实视频而非广告
+            const sortedSources = [...sourceResults].sort((a, b) => {
+                // 首先确保都是可用的
+                if (a.isValid && !b.isValid) return -1;
+                if (!a.isValid && b.isValid) return 1;
+                
+                // 广告特征检测 - 抖音广告通常在静态CDN，真实视频在vod服务上
+                const isAdsA = a.url.includes('static') || a.url.includes('douyinstatic') || a.url.includes('uuu_');
+                const isAdsB = b.url.includes('static') || b.url.includes('douyinstatic') || b.url.includes('uuu_');
+                
+                if (isAdsA && !isAdsB) return 1;  // a是广告，b不是，b优先
+                if (!isAdsA && isAdsB) return -1; // a不是广告，b是，a优先
+                
+                // 真实视频特征 - 通常包含这些路径
+                const isRealVideoA = a.url.includes('/play/') || a.url.includes('aweme/v1/play') || a.url.includes('video/tos');
+                const isRealVideoB = b.url.includes('/play/') || b.url.includes('aweme/v1/play') || b.url.includes('video/tos');
+                
+                if (isRealVideoA && !isRealVideoB) return -1;
+                if (!isRealVideoA && isRealVideoB) return 1;
+                
+                // 如果内容长度可用，优先选择较大的文件（真实视频通常更大）
+                if (a.contentLength && b.contentLength) {
+                    return b.contentLength - a.contentLength;
+                }
+                
+                // 如果以上都不能区分，保持原有顺序
+                return 0;
+            });
+            
+            // 挑选第一个可用的源
+            downloadableSource = sortedSources.find(source => source.isValid);
 
             if (!downloadableSource) {
                 return res.status(400).json({
@@ -192,6 +288,8 @@ router.post('/douyin', async (req, res) => {
                     sources: sourceResults
                 });
             }
+            
+            console.log(`选择的视频源: ${downloadableSource.url.substring(0, 100)}...`);
 
             // 保存到数据库
             const saveResult = await saveVideo(title, downloadableSource.url, 'douyin');

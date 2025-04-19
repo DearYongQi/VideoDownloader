@@ -22,7 +22,7 @@ class WebSocketService {
     // 获取WebSocket连接URL
     // 开发环境使用本地地址，生产环境使用相对路径
     const wsUrl = import.meta.env.DEV 
-      ? 'ws://localhost:6588/ws'  // 开发环境直接连接后端
+      ? 'ws://localhost:8080/ws'  // 开发环境直接连接后端
       : `ws://${window.location.host}/ws`;  // 生产环境使用当前域名
 
     console.log('正在连接WebSocket:', wsUrl);

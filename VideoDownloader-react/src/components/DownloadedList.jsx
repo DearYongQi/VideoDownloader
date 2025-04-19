@@ -84,10 +84,6 @@ const DownloadedList = ({
 
     // 获取当前API端口号，如果无法获取则使用默认的6588
     const getApiPort = () => {
-      // 尝试从环境变量获取
-      if (process.env.REACT_APP_API_PORT) {
-        return process.env.REACT_APP_API_PORT;
-      }
       
       // 尝试从当前页面URL获取
       // 假设前端端口与API端口存在固定关系，如前端端口+1=API端口

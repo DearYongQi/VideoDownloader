@@ -20,12 +20,12 @@ export default defineConfig({
     open: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:6588', // 后端接口地址
+        target: 'http://localhost:8080', // 后端接口地址
         changeOrigin: true,
         // 完全保留原始路径，不做任何重写
       },
       '/ws': {
-        target: 'ws://localhost:6588',
+        target: 'ws://localhost:8080',
         ws: true, // 启用WebSocket代理
         changeOrigin: true
       }
