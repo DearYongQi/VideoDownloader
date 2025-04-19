@@ -1,0 +1,177 @@
+.time-range-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 16px 0;
+  padding: 16px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+
+  .clock-container {
+    position: relative;
+    width: 100%;
+    max-width: 240px;
+    aspect-ratio: 1;
+    margin-bottom: 16px;
+  }
+
+  .clock-canvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .clock-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .clock-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #666;
+    margin-bottom: 8px;
+  }
+
+  .time-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 12px;
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+    margin-top: 40px;
+  }
+
+  .time-range {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    text-align: center;
+  }
+
+  .period-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 16px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .period-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    
+    &.day {
+      background: #ffd700;
+      box-shadow: 0 0 8px #ffd700;
+    }
+    
+    &.night {
+      background: #4169e1;
+      box-shadow: 0 0 8px #4169e1;
+    }
+  }
+
+  .period-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+  }
+
+  .placeholder-text {
+    font-size: 14px;
+    color: #999;
+    text-align: center;
+  }
+}
+
+// 暗色模式适配
+[data-theme="dark"] {
+  .time-range-clock {
+    background: #1f1f1f;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    
+    .clock-canvas {
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .clock-title {
+      color: #aaa;
+    }
+    
+    .time-info {
+      background: rgba(31, 31, 31, 0.9);
+    }
+    
+    .time-range {
+      color: #fff;
+    }
+    
+    .period-indicator {
+      background: rgba(31, 31, 31, 0.9);
+    }
+    
+    .period-text {
+      color: #fff;
+    }
+    
+    .placeholder-text {
+      color: #666;
+    }
+  }
+}
+
+// 移动端适配
+@media screen and (max-width: 768px) {
+  .time-range-clock {
+    padding: 12px;
+    margin: 12px 0;
+    
+    .clock-container {
+      max-width: 200px;
+    }
+    
+    .clock-title {
+      font-size: 14px;
+    }
+    
+    .time-info {
+      margin-top: 30px;
+      padding: 8px;
+    }
+    
+    .time-range {
+      font-size: 16px;
+    }
+    
+    .period-indicator {
+      padding: 4px 10px;
+    }
+    
+    .period-text {
+      font-size: 12px;
+    }
+    
+    .placeholder-text {
+      font-size: 12px;
+    }
+  }
+} 

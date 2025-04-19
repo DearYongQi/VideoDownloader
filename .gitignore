@@ -1,0 +1,12 @@
+# Node.js dependencies
+VideoDownloader-nodejs/node_modules/
+VideoDownloader-react/node_modules/
+
+VideoDownloader-nodejs/public/
+VideoDownloader-react/public/
+
+VideoDownloader-nodejs/dist/
+VideoDownloader-react/dist/
+
+VideoDownloader-nodejs/build/
+VideoDownloader-react/build/

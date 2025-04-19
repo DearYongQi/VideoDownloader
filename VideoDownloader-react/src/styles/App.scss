@@ -1,0 +1,424 @@
+// @import './theme.scss';
+
+.app {
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  padding: 10px 0 24px;
+  transition: background-color 0.3s;
+  
+  @include mobile {
+    padding: 20px 0 16px;
+  }
+  
+  .app-header {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    @include mobile {
+      padding: 0 16px 20px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+    }
+    
+    .header-left {
+      padding-left: 40px;
+      
+      @include mobile {
+        padding-left: 0;
+        text-align: center;
+      }
+      
+      .app-title {
+        font-size: 28px;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin: 0;
+        
+        @include mobile {
+          font-size: 24px;
+          text-align: center;
+        }
+      }
+      
+      .app-subtitle {
+        font-size: 14px;
+        color: var(--text-color);
+        opacity: 0.8;
+        margin: 8px 0 0;
+        
+        @include mobile {
+          text-align: center;
+        }
+        
+        .bilibili-text {
+          color: #FB7299;
+          cursor: pointer;
+          font-weight: 500;
+          transition: all 0.3s;
+          padding: 2px 4px;
+          border-radius: 4px;
+          
+          &:hover {
+            background-color: rgba(251, 114, 153, 0.1);
+            text-decoration: underline;
+          }
+        }
+      }
+    }
+
+    .header-right {
+      flex: 0 0 auto;
+      width: 800px;
+      
+      @include mobile {
+        width: 100%;
+      }
+    }
+  }
+  
+  .app-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px;
+    
+    @include mobile {
+      padding: 0 16px;
+    }
+    
+    // 解析任务列表样式
+    .parsing-tasks {
+      margin-top: 16px;
+      background-color: var(--card-bg-color);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      
+      h3 {
+        margin-top: 0;
+        margin-bottom: 12px;
+        font-size: 16px;
+        color: var(--text-color);
+      }
+      
+      .parsing-tasks-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 200px;
+        overflow-y: auto;
+        
+        .parsing-task-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 8px 12px;
+          border-radius: 4px;
+          background-color: var(--bg-color);
+          
+          &.parsing {
+            border-left: 3px solid #1890ff;
+          }
+          
+          &.success {
+            border-left: 3px solid #52c41a;
+          }
+          
+          &.error {
+            border-left: 3px solid #f5222d;
+            transition: all 0.2s ease;
+            
+            &:hover {
+              background-color: #fff1f1;
+              box-shadow: 0 0 5px rgba(255, 0, 0, 0.1);
+              cursor: pointer;
+            }
+            
+            &:active {
+              background-color: #ffe6e6;
+            }
+            
+            .task-url {
+              text-decoration: underline;
+              text-decoration-style: dotted;
+              text-underline-offset: 3px;
+            }
+          }
+          
+          .task-url {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-color);
+          }
+          
+          .task-status {
+            margin-left: 12px;
+            font-size: 14px;
+            
+            .parsing & {
+              color: #1890ff;
+            }
+            
+            .success & {
+              color: #52c41a;
+            }
+            
+            .error & {
+              color: #f5222d;
+            }
+          }
+        }
+      }
+    }
+    
+    // 间距
+    .input-section,
+    .task-section,
+    .progress-section {
+      margin-bottom: 24px;
+    }
+    
+    .content-row {
+      display: flex;
+      gap: 24px;
+      
+      @include mobile {
+        flex-direction: column;
+        gap: 16px;
+      }
+      
+      .content-col {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+  }
+}
+
+// 修改Ant Design组件主题
+:root {
+  --ant-primary-color: var(--primary-color);
+  --ant-primary-color-hover: var(--primary-color-dark);
+}
+
+// 统一按钮样式
+.action-button {
+  font-size: 14px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  
+  .anticon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    margin-right: 4px;
+  }
+  
+  .button-text {
+    display: inline-block;
+    font-size: 14px;
+  }
+}
+
+// 统一所有组件中的header-actions样式
+.header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+// 自适应布局
+@media (max-width: 768px) {
+  .action-button {
+    padding: 0 6px;
+    font-size: 12px;
+    height: 30px;
+    min-width: auto;
+    
+    .button-text {
+      font-size: 12px;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .action-button {
+    padding: 0 4px;
+    font-size: 12px;
+    height: 28px;
+    min-width: auto;
+    margin-left: 2px;
+    
+    .button-text {
+      font-size: 0;
+      width: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+    
+    .anticon {
+      margin-right: 0;
+      font-size: 14px;
+    }
+  }
+}
+
+@media (max-width: 380px) {
+  .action-button {
+    min-width: 24px;
+    padding: 0 2px;
+    margin-left: 2px;
+    height: 24px;
+    
+    .button-text {
+      display: none;
+    }
+    
+    .anticon {
+      margin-right: 0;
+      font-size: 13px;
+    }
+  }
+}
+
+.ant-btn-primary {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  
+  &:hover, &:focus {
+    background-color: var(--primary-color-dark) !important;
+    border-color: var(--primary-color-dark) !important;
+  }
+}
+
+.ant-modal-content {
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: var(--card-bg-color);
+  
+  .ant-modal-header {
+    background-color: var(--card-bg-color);
+    border-bottom: 1px solid var(--border-color);
+    
+    .ant-modal-title {
+      color: var(--text-color);
+    }
+  }
+  
+  .ant-modal-body {
+    color: var(--text-color);
+  }
+  
+  .ant-modal-footer {
+    border-top: 1px solid var(--border-color);
+  }
+}
+
+// 统一列表头部样式
+.list-header, .progress-header {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  
+  h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-color);
+    white-space: nowrap;
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    
+    .count-badge {
+      margin-left: 8px;
+      
+      .ant-badge-count {
+        background: var(--primary-color);
+        font-size: 12px;
+        font-weight: normal;
+        box-shadow: none;
+        padding: 0 6px;
+        height: 18px;
+        line-height: 18px;
+        border-radius: 9px;
+      }
+    }
+  }
+}
+
+// 移动端列表头部样式
+@media (max-width: 768px) {
+  .list-header, .progress-header {
+    padding: 16px 12px;
+    
+    h3 {
+      font-size: 16px;
+      margin-right: 8px;
+      
+      .count-badge .ant-badge-count {
+        font-size: 11px;
+        height: 16px;
+        line-height: 16px;
+        padding: 0 5px;
+      }
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .list-header, .progress-header {
+    padding: 10px 8px;
+    
+    h3 {
+      font-size: 15px;
+      margin-right: 5px;
+    }
+  }
+}
+
+@media (max-width: 380px) {
+  .list-header, .progress-header {
+    h3 {
+      font-size: 14px;
+      
+      .count-badge .ant-badge-count {
+        font-size: 10px;
+        height: 15px;
+        line-height: 15px;
+        padding: 0 4px;
+      }
+    }
+  }
+}
+
+// 暗黑模式适配
+:global(.ant-theme-dark) {
+  .app {
+    .bilibili-text {
+      color: #FC8BAB !important;
+      
+      &:hover {
+        background-color: rgba(252, 139, 171, 0.15);
+      }
+    }
+  }
+} 

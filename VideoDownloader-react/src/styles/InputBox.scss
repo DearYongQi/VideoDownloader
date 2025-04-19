@@ -1,0 +1,106 @@
+// @import './theme.scss';
+
+.input-box {
+  width: 100%;
+  background-color: var(--card-bg-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px var(--shadow-color);
+  padding: 16px;
+  transition: all 0.3s ease;
+  margin-bottom: 24px;
+  
+  &.focused {
+    box-shadow: 0 6px 16px var(--shadow-color), 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+  }
+  
+  .ant-input {
+    border-radius: 8px;
+    border-color: var(--border-color);
+    transition: all 0.3s ease;
+    font-size: 16px;
+    background-color: var(--card-bg-color);
+    color: var(--text-color);
+    
+    &::placeholder {
+      color: var(--text-light-color);
+      opacity: 0.6;
+    }
+    
+    // 黑夜模式下的输入框样式
+    @media (prefers-color-scheme: dark) {
+      background-color: rgba(0, 0, 0, 0.2);
+      border-color: rgba(255, 255, 255, 0.08);
+      
+      &:hover, &:focus {
+        background-color: rgba(0, 0, 0, 0.3);
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+      }
+    }
+    
+    // 明亮模式下的输入框样式
+    @media (prefers-color-scheme: light) {
+      &:hover, &:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+      }
+    }
+  }
+  
+  .extracted-url {
+    padding: 8px 0;
+    margin: 8px 0;
+    border-top: 1px dashed var(--border-color);
+    border-bottom: 1px dashed var(--border-color);
+    overflow: hidden;
+    
+    .ant-typography {
+      max-width: calc(100% - 70px);
+      color: var(--text-color);
+    }
+  }
+  
+  .error-alert {
+    margin: 12px 0;
+  }
+  
+  .buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+    
+    .ant-btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+      
+      &:hover, &:focus {
+        background-color: var(--primary-color-dark);
+        border-color: var(--primary-color-dark);
+      }
+    }
+    
+    .ant-btn:not(.ant-btn-primary) {
+      background-color: transparent;
+      border-color: var(--border-color);
+      color: var(--text-color);
+      
+      &:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+    }
+  }
+  
+  @include mobile {
+    padding: 12px;
+    
+    .buttons {
+      flex-direction: column;
+      margin-top: 12px;
+      
+      .ant-btn {
+        width: 100%;
+      }
+    }
+  }
+} 

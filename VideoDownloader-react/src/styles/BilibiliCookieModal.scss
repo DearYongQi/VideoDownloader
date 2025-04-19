@@ -1,0 +1,36 @@
+.bilibili-cookie-modal {
+  .cookie-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    
+    .cookie-tip {
+      margin-bottom: 0;
+      color: rgba(0, 0, 0, 0.45);
+    }
+
+    .button-group {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+  }
+
+  // 适配暗黑模式
+  :global(.ant-theme-dark) & {
+    .cookie-tip {
+      color: rgba(255, 255, 255, 0.45);
+    }
+  }
+
+  // 移动端适配
+  @media (max-width: 768px) {
+    .ant-modal-content {
+      padding: 16px !important;
+    }
+
+    .cookie-form {
+      gap: 12px;
+    }
+  }
+} 

@@ -1,0 +1,209 @@
+.system-monitor {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0;
+  max-width: 1000px;
+  margin: 0 auto;
+
+  .monitor-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 90px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  .monitor-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 6px;
+    justify-content: center;
+    padding: 0 8px;
+
+    .anticon {
+      font-size: 18px;
+      color: #FFBD7A;
+    }
+
+    .ant-typography {
+      font-size: 15px;
+      text-align: center;
+    }
+  }
+
+  .ant-progress {
+    margin: 4px 0;
+    height: 10px !important;
+    padding: 2px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+
+    .ant-progress-outer {
+      display: flex;
+      align-items: center;
+      padding: 0;
+    }
+
+    .ant-progress-bg {
+      height: 6px !important;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #FFBD7A, #FF8C00);
+      box-shadow: 0 2px 4px rgba(255, 189, 122, 0.3);
+      position: relative;
+      overflow: hidden;
+
+      &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, 
+          rgba(255, 255, 255, 0.1) 0%, 
+          rgba(255, 255, 255, 0.2) 50%, 
+          rgba(255, 255, 255, 0.1) 100%);
+      }
+    }
+
+    .ant-progress-inner {
+      background: transparent;
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+    }
+
+    &.ant-progress-status-success .ant-progress-bg {
+      background: linear-gradient(90deg, #52c41a, #95de64);
+      box-shadow: 0 2px 4px rgba(82, 196, 26, 0.3);
+    }
+
+    &.ant-progress-status-exception .ant-progress-bg {
+      background: linear-gradient(90deg, #ff4d4f, #ff7875);
+      box-shadow: 0 2px 4px rgba(255, 77, 79, 0.3);
+    }
+  }
+
+  .monitor-value {
+    font-size: 14px;
+    display: block;
+    text-align: center;
+    margin-top: 4px;
+    font-weight: 500;
+
+    &.upload .anticon {
+      color: #ff4d4f !important;
+      margin-right: 4px;
+      font-size: 16px;
+    }
+
+    &.download .anticon {
+      color: #1890ff !important;
+      margin-right: 4px;
+      font-size: 16px;
+    }
+
+    .speed-value {
+      white-space: nowrap;
+      
+      .unit {
+        margin-left: 2px;
+        font-size: 12px;
+        opacity: 0.75;
+        font-weight: normal;
+      }
+    }
+  }
+
+  .network-info {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 4px;
+    gap: 8px;
+  }
+
+  // 暗色主题适配
+  [data-theme='dark'] & {
+    .monitor-item {
+      background: rgba(0, 0, 0, 0.2);
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .ant-progress-inner {
+        background: rgba(0, 0, 0, 0.2);
+      }
+    }
+  }
+
+  // 响应式调整
+  @media (max-width: 768px) {
+    max-width: 100%;
+    padding: 4px !important;
+
+    .monitor-item {
+      padding: 10px;
+      min-height: 80px;
+    }
+
+    .monitor-header {
+      margin-bottom: 4px;
+      
+      .anticon {
+        font-size: 16px;
+      }
+
+      .ant-typography {
+        font-size: 14px;
+      }
+    }
+
+    .monitor-value {
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .ant-progress {
+      height: 8px !important;
+      
+      .ant-progress-bg {
+        height: 4px !important;
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    .monitor-item {
+      padding: 8px;
+      min-height: 70px;
+    }
+
+    .monitor-header {
+      .anticon {
+        font-size: 14px;
+      }
+
+      .ant-typography {
+        font-size: 13px;
+      }
+    }
+
+    .monitor-value {
+      font-size: 12px;
+    }
+  }
+} 
