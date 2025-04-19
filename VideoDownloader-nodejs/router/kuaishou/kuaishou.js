@@ -108,10 +108,32 @@ router.post('/kuaishou', async (req, res) => {
         console.log(`重定向后的URL: ${kuaishouUrl}`);
 
         // 启动浏览器
-        browser = await puppeteer.launch({
-            headless: "new",
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
+        const puppeteerConfig = {};
+        
+        // 检测运行环境，针对不同系统设置不同配置
+        const isRaspberryPi = process.platform === 'linux' && process.arch === 'arm' || process.arch === 'arm64';
+        
+        if (isRaspberryPi) {
+            // 树莓派环境配置
+            console.log('检测到树莓派环境，使用特定配置');
+            puppeteerConfig.executablePath = '/usr/bin/chromium-browser';
+            puppeteerConfig.args = [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--disable-gpu',
+                '--disable-features=site-per-process',
+                '--disable-extensions'
+            ];
+        } else {
+            // Mac 或其他环境使用默认配置
+            console.log('使用默认浏览器配置');
+            puppeteerConfig.headless = "new";
+            puppeteerConfig.args = ['--no-sandbox', '--disable-setuid-sandbox'];
+        }
+        
+        browser = await puppeteer.launch(puppeteerConfig);
 
         const page = await browser.newPage();
         await page.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1');

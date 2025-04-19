@@ -82,8 +82,32 @@ const DownloadedList = ({
       fileName = `${fileName}.mp4`;
     }
 
-    // 按照新格式拼接视频地址
-    return `${window.location.protocol}//${window.location.hostname}:6588/video/${item.source}/${fileName}`;
+    // 获取当前API端口号，如果无法获取则使用默认的6588
+    const getApiPort = () => {
+      // 尝试从环境变量获取
+      if (process.env.REACT_APP_API_PORT) {
+        return process.env.REACT_APP_API_PORT;
+      }
+      
+      // 尝试从当前页面URL获取
+      // 假设前端端口与API端口存在固定关系，如前端端口+1=API端口
+      const currentPort = window.location.port;
+      if (currentPort) {
+        // 如果是开发环境的3000端口，则API可能在8080
+        if (currentPort === '3000') {
+          return '8080';
+        }
+        // 其他情况可能API与前端在同一端口或是前端端口+1
+        // 这里为简单起见，如果是其他端口，就使用同样的端口
+        return currentPort;
+      }
+      
+      // 默认端口号
+      return '8080';
+    };
+
+    // 按照新格式拼接视频地址，使用动态端口
+    return `${window.location.protocol}//${window.location.hostname}:${getApiPort()}/video/${item.source}/${fileName}`;
   };
 
   /**

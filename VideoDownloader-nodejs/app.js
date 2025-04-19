@@ -262,8 +262,8 @@ server.on('error', (err) => {
 });
 
 server.on('listening', () => {
-    console.log('服务已启动 6588');
+    console.log('服务已启动 8080');
 });
 
 // 监听端口
-server.listen(6588);
+server.listen(8080);

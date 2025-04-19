@@ -95,7 +95,32 @@ router.post('/douyin', async (req, res) => {
         console.log(`处理抖音链接: ${douyinUrl}`);
 
         // 启动浏览器
-        browser = await puppeteer.launch({});
+        const puppeteerConfig = {};
+        
+        // 检测运行环境，针对不同系统设置不同配置
+        const isRaspberryPi = process.platform === 'linux' && process.arch === 'arm' || process.arch === 'arm64';
+        
+        if (isRaspberryPi) {
+            // 树莓派环境配置
+            console.log('检测到树莓派环境，使用特定配置');
+            puppeteerConfig.executablePath = '/usr/bin/chromium-browser';
+            puppeteerConfig.args = [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--disable-gpu',
+                '--disable-features=site-per-process',
+                '--disable-extensions'
+            ];
+        } else {
+            // Mac 或其他环境使用默认配置
+            console.log('使用默认浏览器配置');
+            puppeteerConfig.headless = true;
+            puppeteerConfig.args = ['--no-sandbox', '--disable-setuid-sandbox'];
+        }
+        
+        browser = await puppeteer.launch(puppeteerConfig);
 
         try {
             const page = await browser.newPage();

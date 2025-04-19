@@ -322,15 +322,38 @@ async function fetchVideoLinks(url) {
 
     return retryAsync(async () => {
         try {
-            browser = await puppeteer.launch({
-                headless: 'new',
-                args: [
+            // 检测运行环境，针对不同系统设置不同配置
+            const isRaspberryPi = process.platform === 'linux' && process.arch === 'arm' || process.arch === 'arm64';
+            
+            const puppeteerConfig = {};
+            
+            if (isRaspberryPi) {
+                // 树莓派环境配置
+                console.log('检测到树莓派环境，使用特定配置');
+                puppeteerConfig.executablePath = '/usr/bin/chromium-browser';
+                puppeteerConfig.args = [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-web-security',
+                    '--disable-features=IsolateOrigins,site-per-process',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--disable-gpu',
+                    '--disable-extensions'
+                ];
+            } else {
+                // Mac 或其他环境使用默认配置
+                console.log('使用默认浏览器配置');
+                puppeteerConfig.headless = 'new';
+                puppeteerConfig.args = [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-web-security',
                     '--disable-features=IsolateOrigins,site-per-process'
-                ]
-            });
+                ];
+            }
+            
+            browser = await puppeteer.launch(puppeteerConfig);
 
             const page = await browser.newPage();
             const interceptedUrls = new Set();
