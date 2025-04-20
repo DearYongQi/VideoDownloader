@@ -54,7 +54,7 @@ export const extractUrl = (text) => {
 export const getUrlType = (url) => {
   if (!url) return 'unknown';
   
-  if (url.includes('bilibili.com')) {
+  if (url.includes('bilibili.com') || url.includes('b23.tv')) {
     return 'bilibili';
   } else if (url.includes('douyin.com')) {
     return 'douyin';

@@ -115,7 +115,10 @@ router.post('/douyin', async (req, res) => {
                 '--disable-features=site-per-process',
                 '--disable-extensions',
                 '--window-size=1920,1080',
-                '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15"'
+                '--user-agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15"',
+                '--js-flags=--expose-gc',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-component-extensions-with-background-pages'
             ];
             // 在树莓派上强制使用无头模式
             puppeteerConfig.headless = true;
@@ -185,7 +188,7 @@ router.post('/douyin', async (req, res) => {
 
             // 导航到抖音链接
             console.log(`正在打开抖音链接: ${douyinUrl}`);
-            await page.goto(douyinUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+            await page.goto(douyinUrl, { waitUntil: "domcontentloaded", timeout: isRaspberryPi ? 60000 : 30000 });
 
             // 等待页面加载完成
             try {

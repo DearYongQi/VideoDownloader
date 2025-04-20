@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { List, Button, Checkbox, Modal, Form, InputNumber, Empty, Tooltip, ConfigProvider, Space, Row, Col, Divider, Badge } from 'antd';
 import { 
-  PlayCircleOutlined, 
+  DownloadOutlined, 
   CheckOutlined, 
   UnorderedListOutlined, 
   CloseCircleOutlined,
@@ -246,7 +246,7 @@ const TaskList = ({
           <Space>
             <Button
               type="primary"
-              icon={<PlayCircleOutlined />}
+              icon={<DownloadOutlined />}
               onClick={() => setStartModalVisible(true)}
               disabled={!tasks || tasks.length === 0}
               className="action-button"

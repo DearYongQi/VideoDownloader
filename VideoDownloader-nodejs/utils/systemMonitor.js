@@ -11,16 +11,16 @@ async function getSystemStatus() {
     try {
         // 获取CPU信息
         const cpuLoad = await si.currentLoad();
-        
+
         // 获取内存信息
         const memInfo = await si.mem();
-        
+
         // 获取网络信息
         const networkStats = await si.networkStats();
-        
+
         // 获取硬盘信息
         const fsSize = await si.fsSize();
-        
+
         // 系统状态信息
         const status = {
             cpu: cpuLoad.currentLoad.toFixed(2),
@@ -38,31 +38,31 @@ async function getSystemStatus() {
                 tx_speed: 0  // 上传速度
             }
         };
-        
+
         // 填充硬盘信息
         if (fsSize && fsSize.length > 0) {
             // 查找主硬盘（通常是根分区或系统盘）
-            let rootDisk = fsSize.find(disk => 
-                disk.mount === '/' || 
-                disk.mount === '/System/Volumes/Data' || 
-                disk.mount.startsWith('/Volumes') || 
-                disk.mount === 'C:' || 
+            let rootDisk = fsSize.find(disk =>
+                disk.mount === '/' ||
+                disk.mount === '/System/Volumes/Data' ||
+                disk.mount.startsWith('/Volumes') ||
+                disk.mount === 'C:' ||
                 disk.mount === '/'
             );
-            
+
             // 如果找不到主硬盘，使用容量最大的一个
             if (!rootDisk && fsSize.length > 0) {
-                rootDisk = fsSize.reduce((max, disk) => 
+                rootDisk = fsSize.reduce((max, disk) =>
                     disk.size > max.size ? disk : max, fsSize[0]);
             }
-            
+
             if (rootDisk) {
                 status.disk.total = rootDisk.size;     // 总存储大小
                 status.disk.used = rootDisk.used;      // 已使用大小
                 status.disk.free = rootDisk.available; // 可用大小
             }
         }
-        
+
         // 填充网络速度数据
         if (networkStats && networkStats.length > 0) {
             // 获取主网络接口（通常是第一个非0速度的接口）
@@ -76,16 +76,15 @@ async function getSystemStatus() {
             status.network.rx_speed = mainInterface.rx_sec || 0; // 下载速度 bytes/sec
             status.network.tx_speed = mainInterface.tx_sec || 0; // 上传速度 bytes/sec
         }
-        
+
         // 获取温度
-        const isPi = os.platform() === 'linux' && 
-            (os.release().includes('raspbian') || os.release().includes('raspberry'));
-        
+        const isPi = os.platform() === 'linux' &&
+            (os.release().includes('raspbian') || os.release().includes('raspberry') || os.release().includes('rpt-rpi'));
+
         if (isPi) {
             return new Promise((resolve) => {
                 piTemp.measure((err, temp) => {
-                    status.temperature = err ? null : temp;
-                    console.log(status);
+                    status.temperature = err ? 0 : temp;
                     resolve(status);
                 });
             });
