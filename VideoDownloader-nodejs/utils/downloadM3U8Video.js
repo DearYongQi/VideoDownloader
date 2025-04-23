@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const https = require('https');
 const http = require('http');
 const { Parser } = require('m3u8-parser');
+const URL = require('url').URL;
 
 /**
  * 改进的并发队列实现
@@ -124,6 +125,47 @@ async function downloadFile(url, returnType = 'text', maxRetries = 3, timeout = 
 }
 
 /**
+ * 解密 TS 片段
+ * @param {Buffer} data - 加密的TS数据
+ * @param {Buffer} key - 解密密钥
+ * @param {number} segmentIndex - 片段索引，用于生成IV
+ * @returns {Buffer} - 解密后的数据
+ */
+function decryptSegment(data, key, segmentIndex) {
+  try {
+    // 根据HLS规范创建IV - 使用段索引作为IV
+    const iv = Buffer.alloc(16, 0);
+    iv.writeUInt32BE(segmentIndex, 12);
+
+    const decipher = crypto.createDecipheriv('aes-128-cbc', key, iv);
+    decipher.setAutoPadding(true);
+    return Buffer.concat([decipher.update(data), decipher.final()]);
+  } catch (error) {
+    console.error('解密失败:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * 获取密钥URL
+ * @param {string} keyUri - 密钥URI
+ * @param {string} baseUrl - 基础URL
+ * @returns {string} - 完整的密钥URL
+ */
+function getKeyUrl(keyUri, baseUrl) {
+  try {
+    if (keyUri.startsWith('http://') || keyUri.startsWith('https://')) {
+      return keyUri;
+    } else {
+      return new URL(keyUri, baseUrl).href;
+    }
+  } catch (error) {
+    console.error('构建密钥URL失败:', error.message);
+    return keyUri; // 返回原始URI作为备选
+  }
+}
+
+/**
  * 下载 m3u8 视频并保存为本地 TS 文件
  * @param {string} m3u8Url - m3u8 文件的 URL
  * @param {string} outputFilename - 输出的视频文件名
@@ -171,10 +213,21 @@ async function downloadM3U8Video(
 
     console.log(`共找到 ${segments.length} 个 TS 片段`);
 
-    // 获取加密信息
-    const encryptionKey = parser.manifest.segments[0].key;
-    if (encryptionKey) {
-      console.log('检测到加密，将使用密钥进行解密');
+    // 检查是否是加密的
+    let isEncrypted = false;
+    let keyUri = null;
+    
+    // 查找加密信息
+    for (const segment of segments) {
+      if (segment.key && segment.key.method && segment.key.method !== 'NONE' && segment.key.uri) {
+        isEncrypted = true;
+        keyUri = segment.key.uri;
+        break;
+      }
+    }
+
+    if (isEncrypted) {
+      console.log('检测到加密内容');
     }
 
     // 从 startSegment 开始下载 TS
@@ -189,12 +242,19 @@ async function downloadM3U8Video(
 
     // 下载密钥（如果需要）
     let decryptionKey = null;
-    if (encryptionKey && encryptionKey.uri) {
+    if (isEncrypted && keyUri) {
       try {
-        console.log('正在下载解密密钥...');
-        decryptionKey = await downloadFile(encryptionKey.uri, 'buffer', maxRetries, timeout);
-        console.log('密钥已下载');
+        // 构建完整的密钥URL
+        let keyUrl = keyUri;
+        if (!keyUri.startsWith('http')) {
+          keyUrl = new URL(keyUri, m3u8Url).href;
+        }
+        
+        console.log(`正在下载解密密钥: ${keyUrl}`);
+        decryptionKey = await downloadFile(keyUrl, 'buffer', maxRetries, timeout);
+        console.log(`密钥已下载，长度: ${decryptionKey.length} 字节`);
       } catch (err) {
+        console.error(`密钥下载失败: ${err.message}`);
         throw new Error(`密钥下载失败: ${err.message}`);
       }
     }
@@ -220,14 +280,15 @@ async function downloadM3U8Video(
           try {
             const data = await downloadFile(tsUrl, 'buffer', 1, timeout);
 
+            // 如果有解密密钥，对数据进行解密
             if (decryptionKey) {
-              const iv = segment.key && segment.key.iv ?
-                Buffer.from(segment.key.iv.replace('0x', ''), 'hex') :
-                Buffer.alloc(16, 0);
-
-              const decipher = crypto.createDecipheriv('aes-128-cbc', decryptionKey, iv);
-              const decrypted = Buffer.concat([decipher.update(data), decipher.final()]);
-              fs.writeFileSync(tsFilename, decrypted);
+              try {
+                // 使用片段索引作为IV进行解密
+                const decrypted = decryptSegment(data, decryptionKey, startSegment + i);
+                fs.writeFileSync(tsFilename, decrypted);
+              } catch (decryptErr) {
+                throw new Error(`片段解密失败: ${decryptErr.message}`);
+              }
             } else {
               fs.writeFileSync(tsFilename, data);
             }
@@ -238,7 +299,7 @@ async function downloadM3U8Video(
             retries++;
             if (retries <= maxRetries) {
               const delay = Math.min(1000 * Math.pow(2, retries), 10000);
-              console.log(`片段 ${i} 下载失败，${delay}ms 后重试 (${retries}/${maxRetries})`);
+              console.log(`片段 ${i} 下载失败，${delay}ms 后重试 (${retries}/${maxRetries}): ${err.message}`);
               await new Promise(resolve => setTimeout(resolve, delay));
             }
           }
@@ -290,7 +351,10 @@ async function downloadM3U8Video(
     const outputFilePath = path.join(downloadPath, outputFilename);
     const writeStream = fs.createWriteStream(outputFilePath);
 
-    for (const result of downloadResults.filter(r => r.success).sort((a, b) => a.index - b.index)) {
+    // 确保按正确顺序合并
+    const successfulSegments = downloadResults.filter(r => r.success).sort((a, b) => a.index - b.index);
+    
+    for (const result of successfulSegments) {
       const data = fs.readFileSync(result.filename);
       writeStream.write(data);
     }

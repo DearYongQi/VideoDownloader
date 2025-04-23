@@ -89,9 +89,9 @@ const DownloadedList = ({
       // 假设前端端口与API端口存在固定关系，如前端端口+1=API端口
       const currentPort = window.location.port;
       if (currentPort) {
-        // 如果是开发环境的3000端口，则API可能在8080
+        // 如果是开发环境的3000端口，则API可能在86
         if (currentPort === '3000') {
-          return '8080';
+          return '86';
         }
         // 其他情况可能API与前端在同一端口或是前端端口+1
         // 这里为简单起见，如果是其他端口，就使用同样的端口
@@ -99,7 +99,7 @@ const DownloadedList = ({
       }
       
       // 默认端口号
-      return '8080';
+      return '86';
     };
 
     // 按照新格式拼接视频地址，使用动态端口

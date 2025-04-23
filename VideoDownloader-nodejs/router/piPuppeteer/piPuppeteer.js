@@ -138,15 +138,25 @@ async function validateM3U8(m3u8Url) {
             tsCount = Math.max(tsCount, extinfCount);
             
             // 如果是主播放列表，尝试解析子播放列表
-            if (tsCount < 5 && m3u8Content.includes('#EXT-X-STREAM-INF')) {
+            if (tsCount < 10 && m3u8Content.includes('#EXT-X-STREAM-INF')) {
                 console.log('检测到主播放列表，尝试提取子播放列表');
                 
-                // 提取子播放列表URL
-                const subPlaylistUrls = [];
+                // 提取子播放列表URL及其分辨率信息
+                const subPlaylists = [];
                 const lines = m3u8Content.split('\n');
                 
                 for (let i = 0; i < lines.length; i++) {
                     if (lines[i].includes('#EXT-X-STREAM-INF') && i + 1 < lines.length) {
+                        // 提取分辨率和带宽信息
+                        let resolution = '';
+                        let bandwidth = 0;
+                        
+                        const resMatch = lines[i].match(/RESOLUTION=(\d+x\d+)/);
+                        if (resMatch) resolution = resMatch[1];
+                        
+                        const bwMatch = lines[i].match(/BANDWIDTH=(\d+)/);
+                        if (bwMatch) bandwidth = parseInt(bwMatch[1]);
+                        
                         let subUrl = lines[i + 1].trim();
                         if (!subUrl.startsWith('http')) {
                             // 相对URL转为绝对URL
@@ -159,18 +169,44 @@ async function validateM3U8(m3u8Url) {
                                 subUrl = `${baseUrl.protocol}//${baseUrl.host}${pathParts.join('/')}/${subUrl}`;
                             }
                         }
-                        subPlaylistUrls.push(subUrl);
+                        
+                        subPlaylists.push({
+                            url: subUrl,
+                            resolution: resolution,
+                            bandwidth: bandwidth
+                        });
                     }
                 }
                 
-                if (subPlaylistUrls.length > 0) {
-                    // 检查第一个子播放列表
-                    return await validateM3U8(subPlaylistUrls[0]);
+                if (subPlaylists.length > 0) {
+                    console.log(`找到 ${subPlaylists.length} 个子播放列表`);
+                    
+                    // 按分辨率和带宽排序，优先选择高分辨率和高带宽的播放列表
+                    subPlaylists.sort((a, b) => {
+                        // 首先按分辨率排序 (如果有分辨率信息)
+                        if (a.resolution && b.resolution) {
+                            const aPixels = a.resolution.split('x').reduce((w, h) => parseInt(w) * parseInt(h), 1);
+                            const bPixels = b.resolution.split('x').reduce((w, h) => parseInt(w) * parseInt(h), 1);
+                            if (aPixels !== bPixels) return bPixels - aPixels; // 降序排列
+                        }
+                        
+                        // 其次按带宽排序
+                        return b.bandwidth - a.bandwidth;
+                    });
+                    
+                    // 打印排序后的播放列表
+                    subPlaylists.forEach((pl, idx) => {
+                        console.log(`播放列表 #${idx+1}: 分辨率=${pl.resolution || '未知'}, 带宽=${pl.bandwidth || '未知'}`);
+                    });
+                    
+                    // 检查最高质量的播放列表
+                    return await validateM3U8(subPlaylists[0].url);
                 }
             }
             
             console.log(`m3u8文件包含 ${tsCount} 个片段`);
-            return tsCount >= 5; // 要求至少5个片段
+            // 提高要求，至少需要10个片段
+            return tsCount >= 10;
         } catch (err) {
             console.error(`验证m3u8文件失败: ${err.message}`);
             return false;
@@ -197,19 +233,25 @@ async function validateVideoUrl(url) {
                     }
                 });
                 
+                const contentType = response.headers['content-type'] || '';
+                console.log(`视频链接响应类型: ${contentType}, 状态码: ${response.status}`);
+                
                 const isValid = response.status === 200 && (
-                    response.headers['content-type']?.includes('video') ||
-                    response.headers['content-type']?.includes('octet-stream')
+                    contentType.includes('video') ||
+                    contentType.includes('octet-stream') ||
+                    contentType.includes('application/vnd')
                 );
                 
                 // 检查内容长度，过滤掉小型广告片段
                 if (isValid && response.headers['content-length']) {
                     const contentLength = parseInt(response.headers['content-length']);
-                    // 过滤掉小于1MB的文件(可能是广告或占位符)
-                    if (contentLength < 1024 * 1024) {
-                        console.log(`视频文件过小 ${contentLength} 字节，可能是广告`);
+                    // 提高过滤标准，过滤掉小于2MB的文件(可能是广告或占位符)
+                    const minSize = 2 * 1024 * 1024; // 2MB
+                    if (contentLength < minSize) {
+                        console.log(`视频文件过小 ${contentLength} 字节 (${contentLength/1024/1024} MB)，可能是广告`);
                         return false;
                     }
+                    console.log(`视频文件大小: ${contentLength/1024/1024} MB`);
                 }
                 
                 return isValid;
@@ -552,6 +594,7 @@ async function processUrl(url) {
                 }
                 
                 const title = `${timestamp}_${domain}`;
+                const type = url.includes('.m3u8') ? 'm3u8' : 'mp4';
                 
                 // 保存到数据库
                 await saveVideo(title, url, 'html');
@@ -561,7 +604,8 @@ async function processUrl(url) {
                     message: '成功保存直接视频链接',
                     links: [{
                         url: url,
-                        type: url.includes('.m3u8') ? 'm3u8' : 'mp4'
+                        type: type,
+                        title: title
                     }]
                 };
             } else {
@@ -589,15 +633,30 @@ async function processUrl(url) {
             };
         }
         
-        // 保存到数据库
-        for (const link of validLinks) {
-            await saveVideo(title, link.url, 'html');
+        // 保存到数据库，为多个链接添加序号
+        const savedLinks = [];
+        for (let i = 0; i < validLinks.length; i++) {
+            const link = validLinks[i];
+            // 如果有多个链接，则从第一个开始添加序号
+            let titleWithIndex = title;
+            if (validLinks.length > 1) {
+                const fileExt = link.type; // 获取文件类型（m3u8或mp4）
+                titleWithIndex = `${title}-${i + 1}.${fileExt}`;
+            }
+            
+            console.log(`保存第 ${i + 1} 个视频: ${titleWithIndex}`);
+            await saveVideo(titleWithIndex, link.url, 'html');
+            
+            savedLinks.push({
+                ...link,
+                title: titleWithIndex
+            });
         }
         
         return {
             success: true,
             message: `成功找到 ${validLinks.length} 个视频链接并保存`,
-            links: validLinks
+            links: savedLinks
         };
     } catch (error) {
         console.error(`处理URL失败: ${error.message}`);
